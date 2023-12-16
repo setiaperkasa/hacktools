@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import filedialog, Listbox
 from PIL import Image
 import PyPDF2
+import re
 
 def is_valid_image(file_path):
     try:
@@ -69,6 +70,16 @@ def contains_web_shell_signatures(file_path):
     except:
         return False
 
+def check_php_code(file_path):
+    issues = []
+    if re.search(r"\$_(POST|GET)\['[^']+'\]", file_path):
+        issues.append("Direct usage of POST/GET found, potential SQL Injection vulnerability")
+    if re.search(r"mysql_query\(", file_path):
+        issues.append("Found 'mysql_query', consider using prepared statements")
+    if re.search(r"mysqli_query\(", file_path) and not re.search(r"bind_param", file_path, re.MULTILINE):
+        issues.append("Found 'mysqli_query' without 'bind_param', consider using binding parameters")
+    return issues
+    
 def scan_directory(directory):
     suspicious_files = []
     for root, dirs, files in os.walk(directory):
@@ -91,6 +102,14 @@ def scan_directory(directory):
             elif file_ext == '.php':
                 if contains_suspicious_php_code(full_path) or contains_web_shell_signatures(full_path):
                     suspicious_files.append(full_path + " (Suspicious)")
+                    
+            if file_ext == '.php':
+                with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                    php_issues = check_php_code(content)
+                    if php_issues:
+                        suspicious_files.extend([full_path + " - " + issue for issue in php_issues])
+
 
     return suspicious_files
 
