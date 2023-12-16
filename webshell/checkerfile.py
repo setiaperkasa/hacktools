@@ -94,12 +94,14 @@ def is_vulnerable_to_traversal(file_path):
 #Pengecekan Query SQL dan Input Pengguna    
 def check_php_code(file_path):
     issues = []
-    if re.search(r"\$_(POST|GET)\['[^']+'\]", file_path):
-        issues.append("Direct usage of POST/GET found, potential SQL Injection vulnerability")
-    if re.search(r"mysql_query\(", file_path):
-        issues.append("Found 'mysql_query', consider using prepared statements")
-    if re.search(r"mysqli_query\(", file_path) and not re.search(r"bind_param", file_path, re.MULTILINE):
-        issues.append("Found 'mysqli_query' without 'bind_param', consider using binding parameters")
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+        for line_number, line in enumerate(file, 1):
+            if re.search(r"\$_(POST|GET)\['[^']+'\]", line):
+                issues.append(f"Line {line_number}: Direct usage of POST/GET found, potential SQL Injection vulnerability")
+            if re.search(r"mysql_query\(", line):
+                issues.append(f"Line {line_number}: Found 'mysql_query', consider using prepared statements")
+            if re.search(r"mysqli_query\(", line) and not re.search(r"bind_param", line, re.MULTILINE):
+                issues.append(f"Line {line_number}: Found 'mysqli_query' without 'bind_param', consider using binding parameters")
     return issues
  
 #Pengecekan Hak Akses Folder
@@ -169,9 +171,7 @@ def scan_directory(directory):
             # Pengecekan khusus untuk file PHP
             if file_ext == '.php':
                 # Pengecekan kode PHP, traversal, dan upload vulnerabilities
-                with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
-                    php_issues = check_php_code(content)
+                    php_issues = check_php_code(full_path)
                     if php_issues:
                         suspicious_files.extend([full_path + " - " + issue for issue in php_issues])
                     if is_vulnerable_to_traversal(full_path):
@@ -205,7 +205,12 @@ frame.pack(padx=10, pady=10)
 scan_button = tk.Button(frame, text="Scan Directory", command=on_scan)
 scan_button.pack(side=tk.LEFT)
 
-listbox = Listbox(root, width=100, height=20)
+scrollbar = tk.Scrollbar(root)
+scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+listbox = Listbox(root, width=100, height=20, yscrollcommand=scrollbar.set)
 listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+scrollbar.config(command=listbox.yview)
 
 root.mainloop()
