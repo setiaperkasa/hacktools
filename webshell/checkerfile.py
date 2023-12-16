@@ -1,6 +1,6 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, Listbox
+from tkinter import filedialog, Listbox, ttk
 from PIL import Image
 import PyPDF2
 import re
@@ -144,10 +144,18 @@ def check_php_upload_vulnerabilities(file_path):
                 issues.append("Missing or insufficient error handling in file upload.")
     
     return issues
+
+def update_progress(step, total_steps):
+    progress['value'] = (step / total_steps) * 100
+    root.update_idletasks()
     
-def scan_directory(directory):
+def scan_directory(directory, tk_root, progress):
     suspicious_files = []
+    total_files = sum([len(files) for _, _, files in os.walk(directory)])
+    processed_files = 0
     for root, dirs, files in os.walk(directory):
+        total_files = sum([len(files) for r, d, files in os.walk(directory)])
+        processed_files = 0
         for file in files:
             full_path = os.path.join(root, file)
             file_ext = os.path.splitext(full_path)[1].lower()
@@ -179,7 +187,10 @@ def scan_directory(directory):
                     upload_issues = check_php_upload_vulnerabilities(full_path)
                     if upload_issues:
                         suspicious_files.extend([full_path + " - " + issue for issue in upload_issues])
-    
+                        
+            processed_files += 1
+            update_progress(processed_files, total_files)
+            
     # Pengecekan hak akses folder
     permission_issues = check_folder_permissions(directory)
     suspicious_files.extend(permission_issues)
@@ -189,13 +200,14 @@ def on_scan():
     directory = filedialog.askdirectory()
     print(f"Selected directory: {directory}")
     if directory:
-        suspicious_files = scan_directory(directory)
+        suspicious_files = scan_directory(directory, root, progress)
         listbox.delete(0, tk.END)
         for file in suspicious_files:
             listbox.insert(tk.END, file)
         if not suspicious_files:
             listbox.insert(tk.END, "No suspicious files found.")
-
+        progress['value'] = 0
+        
 root = tk.Tk()
 root.title("File Scanner by UPIL")
 
@@ -213,4 +225,9 @@ listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
 scrollbar.config(command=listbox.yview)
 
+progress = ttk.Progressbar(root, orient=tk.HORIZONTAL, length=100, mode='determinate')
+progress.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+
 root.mainloop()
+
+
