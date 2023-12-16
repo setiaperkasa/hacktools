@@ -149,7 +149,7 @@ def scan_directory(directory):
         for file in files:
             full_path = os.path.join(root, file)
             file_ext = os.path.splitext(full_path)[1].lower()
-            
+            # Pengecekan gambar, PDF, doc, dan lainnya
             if file_ext in ['.jpg', '.jpeg', '.png', '.gif']:
                 if not is_valid_image(full_path):
                     suspicious_files.append(full_path + " (Suspicious)")
@@ -166,7 +166,9 @@ def scan_directory(directory):
                 if contains_suspicious_php_code(full_path) or contains_web_shell_signatures(full_path):
                     suspicious_files.append(full_path + " (Suspicious)")
                     
-            elif file_ext == '.php':
+            # Pengecekan khusus untuk file PHP
+            if file_ext == '.php':
+                # Pengecekan kode PHP, traversal, dan upload vulnerabilities
                 with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
                     php_issues = check_php_code(content)
@@ -177,10 +179,10 @@ def scan_directory(directory):
                     upload_issues = check_php_upload_vulnerabilities(full_path)
                     if upload_issues:
                         suspicious_files.extend([full_path + " - " + issue for issue in upload_issues])
-     
+    
+    # Pengecekan hak akses folder
     permission_issues = check_folder_permissions(directory)
     suspicious_files.extend(permission_issues)
-
     return suspicious_files
 
 def on_scan():
