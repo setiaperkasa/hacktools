@@ -4,7 +4,9 @@ from tkinter import filedialog, Listbox
 from PIL import Image
 import PyPDF2
 import re
+import stat
 
+#Pengecekan Gambar
 def is_valid_image(file_path):
     try:
         with Image.open(file_path) as img:
@@ -21,6 +23,7 @@ def is_fake_pdf(file_path):
     except:
         return True
 
+#Pengecekan PDF
 def contains_php_code(file_path):
     try:
         with open(file_path, 'rb') as file:
@@ -33,6 +36,7 @@ def contains_php_code(file_path):
     except:
         return False
 
+#Pengecekan Binari File
 def contains_php_code_in_binary(file_path):
     try:
         with open(file_path, 'rb') as file:
@@ -41,6 +45,7 @@ def contains_php_code_in_binary(file_path):
     except:
         return False
 
+#Pengecekan Coding PHP mencurigakan
 def contains_suspicious_php_code(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
@@ -53,6 +58,7 @@ def contains_suspicious_php_code(file_path):
     except:
         return False
 
+#Pengecekan WebShell PHP
 def contains_web_shell_signatures(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
@@ -70,6 +76,22 @@ def contains_web_shell_signatures(file_path):
     except:
         return False
 
+#Pengecekan Directory Traversal
+def is_vulnerable_to_traversal(file_path):
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+        content = file.read()
+        patterns = [
+            r"\$_(GET|POST|REQUEST|FILES)\[['\"]?[a-zA-Z0-9_]+['\"]?\][ ]*\.[ ]*['\"]?/",
+            r"fopen\([ ]*\$_(GET|POST|REQUEST|FILES)",
+            r"include\([ ]*\$_(GET|POST|REQUEST|FILES)",
+            r"require\([ ]*\$_(GET|POST|REQUEST|FILES)"
+        ]
+        for pattern in patterns:
+            if re.search(pattern, content):
+                return True
+    return False
+
+#Pengecekan Query SQL dan Input Pengguna    
 def check_php_code(file_path):
     issues = []
     if re.search(r"\$_(POST|GET)\['[^']+'\]", file_path):
@@ -78,6 +100,47 @@ def check_php_code(file_path):
         issues.append("Found 'mysql_query', consider using prepared statements")
     if re.search(r"mysqli_query\(", file_path) and not re.search(r"bind_param", file_path, re.MULTILINE):
         issues.append("Found 'mysqli_query' without 'bind_param', consider using binding parameters")
+    return issues
+ 
+#Pengecekan Hak Akses Folder
+def check_folder_permissions(directory):
+    issues = []
+    for root, dirs, _ in os.walk(directory):
+        for dir in dirs:
+            dir_path = os.path.join(root, dir)
+            mode = os.stat(dir_path).st_mode
+            if mode != 0o100644:  
+                issues.append(f"{dir_path} - Incorrect folder permissions (not 644)")
+    return issues
+
+#Pengecekan Upload Code
+def check_php_upload_vulnerabilities(file_path):
+    issues = []
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+        content = file.read()
+
+        # Periksa penggunaan $_FILES (indikasi kode unggah file)
+        if re.search(r"\$_FILES\[", content):
+            # Periksa Validasi Jenis MIME
+            if not re.search(r"mime_content_type\(", content) and not re.search(r"finfo_", content):
+                issues.append("Missing MIME type validation.")
+
+            # Periksa Pemeriksaan Ekstensi File
+            if not re.search(r"\.php", content, re.IGNORECASE):
+                issues.append("Missing file extension check for .php (or other extensions).")
+
+            # Periksa Batas Ukuran File
+            if not re.search(r"size", content):
+                issues.append("Missing file size limit check.")
+
+            # Periksa Jalur Penyimpanan Aman
+            if re.search(r"move_uploaded_file\(\s*\$_FILES", content) and not re.search(r"/var/www/", content):
+                issues.append("Potential insecure storage path for uploaded files.")
+
+            # Periksa Penanganan Kesalahan
+            if not re.search(r"if\s*\(\s*!move_uploaded_file", content):
+                issues.append("Missing or insufficient error handling in file upload.")
+    
     return issues
     
 def scan_directory(directory):
@@ -103,13 +166,20 @@ def scan_directory(directory):
                 if contains_suspicious_php_code(full_path) or contains_web_shell_signatures(full_path):
                     suspicious_files.append(full_path + " (Suspicious)")
                     
-            if file_ext == '.php':
+            elif file_ext == '.php':
                 with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
                     php_issues = check_php_code(content)
                     if php_issues:
                         suspicious_files.extend([full_path + " - " + issue for issue in php_issues])
-
+                    if is_vulnerable_to_traversal(full_path):
+                        suspicious_files.append(full_path + " (Potential Directory Traversal)")
+                    upload_issues = check_php_upload_vulnerabilities(full_path)
+                    if upload_issues:
+                        suspicious_files.extend([full_path + " - " + issue for issue in upload_issues])
+     
+    permission_issues = check_folder_permissions(directory)
+    suspicious_files.extend(permission_issues)
 
     return suspicious_files
 
