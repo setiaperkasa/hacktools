@@ -73,5 +73,6 @@ Proyek ini dilisensikan di bawah Lisensi MIT - lihat berkas [LICENSE](LICENSE) u
 
 ## Penulis
 
-Setia Perkasa
-Linkedin : https://www.linkedin.com/in/blackevil03/
+## Penulis
+
+[Setia Perkasa](https://www.linkedin.com/in/blackevil03/)
