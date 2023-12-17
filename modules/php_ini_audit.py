@@ -25,6 +25,10 @@ def audit_php_config(config):
         issues.append('expose_php should be turned off')
     if config.get('allow_url_fopen', 'On').lower() == 'on':
         issues.append('allow_url_fopen should be turned off for security reasons')
+    if config.get('display_errors', 'Off').lower() != 'off':
+        issues.append('display_errors should be turned off for security reasons')
+    if config.get('error_reporting', '').lower() != 'e_all':
+        issues.append('error_reporting should be set to E_ALL')
     # Tambahkan lebih banyak aturan sesuai kebutuhan
     return issues
 

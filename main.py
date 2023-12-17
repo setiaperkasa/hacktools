@@ -22,7 +22,7 @@ import tkinter as tk
 from tkinter import filedialog, Listbox, ttk, simpledialog, messagebox
 import os
 from modules.image_checks import (is_valid_image, get_metadata, analyze_metadata, check_gif_extra_data, check_bmp_extra_data)
-from modules.php_code_checks import contains_suspicious_php_code, contains_web_shell_signatures
+from modules.php_code_checks import contains_suspicious_php_code, contains_web_shell_signatures, contains_sensitive_information
 from modules.php_query_checks import check_php_code
 from modules.directory_traversal_checks import is_vulnerable_to_traversal
 from modules.php_upload_checks import check_php_upload_vulnerabilities
@@ -106,8 +106,22 @@ def scan_directory(directory, progress_dialog, finish_button, progress_bar, prog
                     suspicious_files.append(full_path + " (Suspicious)")
             
             elif file_ext == '.php':
-                if contains_suspicious_php_code(full_path) or contains_web_shell_signatures(full_path):
-                    suspicious_files.append(full_path + " (Suspicious)")
+                suspicious_message = []
+
+                suspicious_php_code_message = contains_suspicious_php_code(full_path)
+                if suspicious_php_code_message:
+                    suspicious_message.append(suspicious_php_code_message)
+
+                web_shell_signature_message = contains_web_shell_signatures(full_path)
+                if web_shell_signature_message:
+                    suspicious_message.append(web_shell_signature_message)
+
+                sensitive_info_message = contains_sensitive_information(full_path)
+                if sensitive_info_message:
+                    suspicious_message.append(sensitive_info_message)
+
+                if suspicious_message:
+                    suspicious_files.append(full_path + " (Suspicious - " + ", ".join(suspicious_message) + ")")
                     
             # Pengecekan khusus untuk file PHP
             if file_ext == '.php':
