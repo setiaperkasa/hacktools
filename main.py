@@ -19,7 +19,7 @@ except ImportError as e:
 from PIL import Image
 from PIL.ExifTags import TAGS    
 import tkinter as tk
-from tkinter import filedialog, Listbox, ttk
+from tkinter import filedialog, Listbox, ttk, simpledialog, messagebox
 import os
 from modules.image_checks import (is_valid_image, get_metadata, analyze_metadata, check_gif_extra_data, check_bmp_extra_data)
 from modules.php_code_checks import contains_suspicious_php_code, contains_web_shell_signatures
@@ -29,13 +29,38 @@ from modules.php_upload_checks import check_php_upload_vulnerabilities
 from modules.pdf_checks import is_fake_pdf, contains_php_code
 from modules.file_checks import contains_php_code_in_binary
 from modules.directory_checks import check_folder_permissions
+from modules.host_header_vuln_checks import check_host_header_vuln
 
+global progress_label, progress_bar
 
-def update_progress(step, total_steps):
-    progress['value'] = (step / total_steps) * 100
+def show_progress_dialog(total_files):
+    progress_dialog = tk.Toplevel(root)
+    progress_dialog.title("Progress")
+    progress_dialog.geometry("300x100")
+
+    global progress_label, progress_bar
+
+    progress_label = tk.Label(progress_dialog, text="0/0")
+    progress_label.pack()
+
+    progress_bar = ttk.Progressbar(progress_dialog, orient=tk.HORIZONTAL, length=280, mode='determinate')
+    progress_bar.pack(pady=(20, 10))
+
+    finish_button = tk.Button(progress_dialog, text="Selesai", command=progress_dialog.destroy)
+
+    return progress_dialog, finish_button, progress_bar, progress_label
+
+    
+def update_progress(processed_files, total_files):
+    global progress_label, progress_bar
+    progress_percentage = (processed_files / max(1, total_files)) * 100
+    progress_bar['value'] = progress_percentage
+    progress_label.config(text=f"{processed_files}/{total_files}")
     root.update_idletasks()
     
-def scan_directory(directory, tk_root, progress):
+
+    
+def scan_directory(directory, progress_dialog, finish_button, progress_bar, progress_label):
     suspicious_files = []
     total_files = sum([len(files) for _, _, files in os.walk(directory)])
     processed_files = 0
@@ -43,6 +68,7 @@ def scan_directory(directory, tk_root, progress):
         total_files = sum([len(files) for r, d, files in os.walk(directory)])
         processed_files = 0
         for file in files:
+            processed_files += 1
             full_path = os.path.join(root, file)
             file_ext = os.path.splitext(full_path)[1].lower()
             # Pengecekan gambar, PDF, doc, dan lainnya
@@ -94,10 +120,20 @@ def scan_directory(directory, tk_root, progress):
                     upload_issues = check_php_upload_vulnerabilities(full_path)
                     if upload_issues:
                         suspicious_files.extend([full_path + " - " + issue for issue in upload_issues])
-                        
-            processed_files += 1
-            update_progress(processed_files, total_files)
             
+            #Pengecekan Host Header            
+            if file_ext in ['.php', '.py', '.js', '.html']:
+                host_header_issues = check_host_header_vuln(full_path, ['.php', '.py', '.js', '.html'])
+                for issue in host_header_issues:
+                    suspicious_files.append(issue + " (Potential Host Header Attack)")
+                    
+            update_progress(processed_files, total_files)
+    
+    progress_bar['value'] = 100
+    progress_label.config(text=f"{total_files}/{total_files}")
+    finish_button.pack()
+    progress_dialog.update()
+    
     # Pengecekan hak akses folder
     permission_issues = check_folder_permissions(directory)
     suspicious_files.extend(permission_issues)
@@ -107,7 +143,8 @@ def on_scan():
     directory = filedialog.askdirectory()
     print(f"Selected directory: {directory}")
     if directory:
-        suspicious_files = scan_directory(directory, root, progress)
+        progress_dialog, finish_button, progress_bar, progress_label = show_progress_dialog(total_files)
+        suspicious_files = scan_directory(directory, progress_dialog, finish_button, progress_bar, progress_label)
         listbox.delete(0, tk.END)
         for file in suspicious_files:
             listbox.insert(tk.END, file)
@@ -115,15 +152,40 @@ def on_scan():
             listbox.insert(tk.END, "No suspicious files found.")
         progress['value'] = 0
 
+
+def build_menu(root):
+    # Membuat menu bar
+    menubar = tk.Menu(root)
+
+    # Membuat menu dropdown
+    scan_menu = tk.Menu(menubar, tearoff=0)
+    scan_menu.add_command(label="Scan Directory", command=on_scan)
+    scan_menu.add_separator()
+    scan_menu.add_command(label="Exit", command=root.quit)
+
+    settings_menu = tk.Menu(menubar, tearoff=0)
+    settings_menu.add_command(label="Pengaturan")
+    settings_menu.add_command(label="About", command=check_for_updates)
+
+    # Menambahkan menu dropdown ke menu bar
+    menubar.add_cascade(label="Scan", menu=scan_menu)
+    menubar.add_cascade(label="Settings", menu=settings_menu)
+
+    # Menampilkan menu bar
+    root.config(menu=menubar)
+    
+def check_for_updates():
+    # Implementasi kode untuk memeriksa pembaruan
+    messagebox.showinfo(title="About", message="File Scanner (Beta) Creator : Upil")
+
+    
 if __name__ == "__main__":
     root = tk.Tk()        
-    root.title("File Scanner by UPIL")
-
+    root.title("File Scanner")
+    root.geometry("400x300")
+    
     frame = tk.Frame(root)
     frame.pack(padx=10, pady=10)
-
-    scan_button = tk.Button(frame, text="Scan Directory", command=on_scan)
-    scan_button.pack(side=tk.LEFT)
 
     scrollbar = tk.Scrollbar(root)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -132,8 +194,14 @@ if __name__ == "__main__":
     listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     scrollbar.config(command=listbox.yview)
-
+    
+    total_files = 0
+    
+    progress_label = tk.Label(root, text="", width=10)
+    progress_label.pack()
+    
     progress = ttk.Progressbar(root, orient=tk.HORIZONTAL, length=100, mode='determinate')
-    progress.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
-
+    
+    build_menu(root)
+    
     root.mainloop()
