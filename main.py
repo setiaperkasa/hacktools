@@ -16,11 +16,12 @@ except ImportError as e:
         packages = f.read().splitlines()
     install_packages(packages)
     
+from PIL import Image
+from PIL.ExifTags import TAGS    
 import tkinter as tk
 from tkinter import filedialog, Listbox, ttk
-from modules import image_checks, pdf_checks, php_code_checks, directory_checks, directory_traversal_checks, php_query_checks, php_upload_checks, file_checks
 import os
-from modules.image_checks import is_valid_image, get_metadata, analyze_metadata
+from modules.image_checks import (is_valid_image, get_metadata, analyze_metadata, check_gif_extra_data, check_bmp_extra_data)
 from modules.php_code_checks import contains_suspicious_php_code, contains_web_shell_signatures
 from modules.php_query_checks import check_php_code
 from modules.directory_traversal_checks import is_vulnerable_to_traversal
@@ -28,6 +29,7 @@ from modules.php_upload_checks import check_php_upload_vulnerabilities
 from modules.pdf_checks import is_fake_pdf, contains_php_code
 from modules.file_checks import contains_php_code_in_binary
 from modules.directory_checks import check_folder_permissions
+
 
 def update_progress(step, total_steps):
     progress['value'] = (step / total_steps) * 100
@@ -44,17 +46,30 @@ def scan_directory(directory, tk_root, progress):
             full_path = os.path.join(root, file)
             file_ext = os.path.splitext(full_path)[1].lower()
             # Pengecekan gambar, PDF, doc, dan lainnya
-            if file_ext in ['.jpg', '.jpeg', '.png', '.gif']:
+            if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
                 if not is_valid_image(full_path):
                     suspicious_files.append(full_path + " (Suspicious)")
+                    continue  
                 else:
-                    try:
-                        metadata = get_metadata(full_path)
-                        is_suspicious, reason = analyze_metadata(metadata)
-                        if is_suspicious:
-                            suspicious_files.append(full_path + " - " + reason)
-                    except Exception as e:
-                        print(f"Error analyzing {full_path}: {e}")
+                    # Periksa data tambahan dalam file GIF dan BMP
+                    if file_ext == '.gif':
+                        extra_data_found, message = check_gif_extra_data(full_path)
+                    elif file_ext == '.bmp':
+                        extra_data_found, message = check_bmp_extra_data(full_path)
+                    else:
+                        extra_data_found, message = False, ""
+
+                    if extra_data_found:
+                        suspicious_files.append(full_path + " - " + message)
+                    else:
+                        try:
+                            metadata = get_metadata(full_path)
+                            is_suspicious, reason = analyze_metadata(metadata)
+                            if is_suspicious:
+                                suspicious_files.append(full_path + " - " + reason)
+                        except Exception as e:
+                            suspicious_files.append(full_path + " - Error: " + str(e))
+
                         
             elif file_ext == '.pdf':
                 if is_fake_pdf(full_path) or contains_php_code(full_path):
@@ -122,4 +137,3 @@ if __name__ == "__main__":
     progress.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
 
     root.mainloop()
-
