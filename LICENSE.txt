@@ -1,0 +1,20 @@
+MIT License
+
+Copyright (c) 2023 Setia Perkasa
+
+Izin ini diberikan secara gratis, tanpa biaya kepada siapa pun yang mendapatkan salinan
+dari perangkat lunak ini dan file dokumentasi terkait (Perangkat Lunak), untuk menangani
+Perangkat Lunak tanpa batasan, termasuk tanpa batasan hak untuk menggunakan, menyalin, mengubah,
+menggabungkan, menerbitkan, mendistribusikan, mensublisensikan, dan / atau menjual salinan
+Perangkat Lunak, dan untuk mengizinkan orang-orang yang menerimanya melakukannya, dengan ketentuan
+berikut:
+
+Pemberitahuan hak cipta di atas dan pemberitahuan izin ini harus disertakan dalam semua salinan
+atau bagian penting dari Perangkat Lunak.
+
+PERANGKAT LUNAK INI DIBERIKAN "SEBAGAIMANA ADANYA", TANPA JAMINAN APA PUN, BAIK TERSIRAT MAUPUN
+TERSURAT, TERMASUK, TAPI TIDAK TERBATAS PADA GARANSI DAGANG, KECOCOKAN UNTUK TUJUAN TERTENTU, DAN
+PELANGGARAN. DALAM KEADAAN APA PUN PENULIS ATAU PEMEGANG HAK CIPTA BERTANGGUNG JAWAB ATAS KLAIM,
+KERUSAKAN, ATAU LAINNYA BERDASARKAN TINDAKAN KONTRAK, HUKUM ATAU SEBALIKNYA, YANG TIMBUL DARI,
+SEBAGAI AKIBAT DARI ATAU DIHUBUNGKAN DENGAN PERANGKAT LUNAK ATAU PENGGUNAAN ATAU TRANSAKSI LAIN
+DENGAN PERANGKAT LUNAK.

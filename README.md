@@ -1,6 +1,6 @@
 # Hacktools
 
-“The quieter you become, the more you can hear.”
+"The quieter you become, the more you can hear."
 
 Hacktools adalah serangkaian alat komprehensif yang dirancang untuk meningkatkan langkah-langkah keamanan siber dengan melakukan berbagai pemeriksaan dan analisis pada berbagai jenis file dan kode. Berikut adalah gambaran umum dari kemampuannya:
 
@@ -35,3 +35,43 @@ Hacktools adalah serangkaian alat komprehensif yang dirancang untuk meningkatkan
 ---
 
 Hacktools dikembangkan dengan tujuan untuk menyediakan seperangkat alat yang mudah digunakan, namun kuat untuk profesional dan penggemar keamanan TI.
+
+## Instalasi
+
+Anda dapat menginstal Hacktools dengan mengikuti langkah-langkah berikut:
+
+1. **Klon repositori ini** ke komputer Anda dengan perintah berikut:
+
+   ```bash
+   git clone https://github.com/setiaperkasa/hacktools.git
+   ```
+   
+2. **Navigasi** Masuk ke direktori proyek:
+	```bash
+	cd hacktools
+	```
+
+3. **Persiapan** Pastikan Anda memiliki paket-paket yang dibutuhkan dengan menjalankan perintah berikut:
+	```bash
+	pip install -r requirements.txt
+	```
+
+---
+
+## Penggunaan
+
+1. Jalankan aplikasi.
+2. Klik menu "Scan" dan pilih "Scan Direktori."
+3. Pilih direktori yang ingin Anda pindai.
+4. Pemindaian akan dimulai, dan Anda akan melihat bilah kemajuan yang menunjukkan kemajuan pemindaian.
+5. Setelah pemindaian selesai, daftar file yang mencurigakan dan potensi kerentanan akan ditampilkan di jendela aplikasi.
+
+
+## Lisensi
+Proyek ini dilisensikan di bawah Lisensi MIT - lihat berkas [LICENSE](LICENSE) untuk rincian lebih lanjut.
+
+
+## Penulis
+
+Setia Perkasa
+Linkedin : https://www.linkedin.com/in/blackevil03/
