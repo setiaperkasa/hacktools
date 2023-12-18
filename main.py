@@ -166,7 +166,14 @@ def on_scan():
             listbox.insert(tk.END, "No suspicious files found.")
         progress['value'] = 0
 
-
+def export_log(suspicious_files):
+    filename = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+    if filename:
+        with open(filename, "w") as f:
+            for file in suspicious_files:
+                f.write(file + "\n")
+        messagebox.showinfo("Export Log", f"Log berhasil diekspor ke {filename}")
+        
 def build_menu(root):
     # Membuat menu bar
     menubar = tk.Menu(root)
@@ -174,6 +181,7 @@ def build_menu(root):
     # Membuat menu dropdown
     scan_menu = tk.Menu(menubar, tearoff=0)
     scan_menu.add_command(label="Scan Directory", command=on_scan)
+    scan_menu.add_command(label="Export Hasil", command=lambda: export_log(listbox.get(0, tk.END)))
     scan_menu.add_separator()
     scan_menu.add_command(label="Exit", command=root.quit)
 
